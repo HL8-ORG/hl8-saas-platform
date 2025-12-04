@@ -1,0 +1,60 @@
+{
+  "name": "hl8-saas-platform",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "author": {
+    "name": "HL8",
+    "email": "hl8@hl8.com",
+    "url": "https://hl8.com"
+  },
+  "scripts": {
+    "add:admin-api": "pnpm add --filter=admin-api",
+    "add:main": "pnpm add -w",
+    "add:shadcn": "pnpm add --filter=@repo/shadcn",
+    "add:utils": "pnpm add --filter=@repo/utils",
+    "add:hl8-admin": "pnpm add --filter=hl8-admin",
+    "build": "turbo build",
+    "build:admin-api": "pnpm build --filter=admin-api",
+    "build:hl8-admin": "pnpm build --filter=hl8-admin",
+    "changeset": "changeset",
+    "clear:modules": "npx npkill",
+    "commit": "cz",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "libs:fix": "pnpm dlx sherif@latest --fix",
+    "lint": "turbo lint",
+    "prepare": "husky",
+    "start": "turbo start",
+    "test": "turbo test",
+    "test:cov": "turbo test:cov"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.7",
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "@total-typescript/ts-reset": "^0.6.1",
+    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
+    "@types/node": "24.10.1",
+    "commitizen": "^4.3.1",
+    "cz-conventional-changelog": "^3.3.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.6.2",
+    "prettier-plugin-css-order": "^2.1.2",
+    "prettier-plugin-organize-imports": "^4.3.0",
+    "prettier-plugin-packagejson": "^2.5.19",
+    "prettier-plugin-tailwindcss": "^0.7.1",
+    "turbo": "^2.6.1",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "pnpm@10.11.0",
+  "engines": {
+    "node": ">=20"
+  }
+}
