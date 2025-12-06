@@ -10,10 +10,10 @@
   },
   "scripts": {
     "add:admin-api": "pnpm add --filter=admin-api",
+    "add:hl8-admin": "pnpm add --filter=hl8-admin",
     "add:main": "pnpm add -w",
     "add:shadcn": "pnpm add --filter=@repo/shadcn",
     "add:utils": "pnpm add --filter=@repo/utils",
-    "add:hl8-admin": "pnpm add --filter=hl8-admin",
     "build": "turbo build",
     "build:admin-api": "pnpm build --filter=admin-api",
     "build:hl8-admin": "pnpm build --filter=hl8-admin",
