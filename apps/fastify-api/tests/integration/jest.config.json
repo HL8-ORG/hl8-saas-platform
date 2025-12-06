@@ -1,0 +1,22 @@
+{
+  "displayName": "Integration Tests",
+  "preset": "ts-jest",
+  "testEnvironment": "node",
+  "rootDir": ".",
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "testRegex": ".*\\.integration\\.spec\\.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^@/(.*)$": "<rootDir>/../../src/$1",
+    "^src/(.*)$": "<rootDir>/../../src/$1",
+    "^@repo/constants/app$": "<rootDir>/../../../packages/constants/app.ts"
+  },
+  "setupFilesAfterEnv": ["<rootDir>/jest.setup.ts"],
+  "testTimeout": 30000,
+  "maxWorkers": 1,
+  "forceExit": true,
+  "detectOpenHandles": true
+}
+
