@@ -172,7 +172,6 @@ describe('Public', () => {
       TestController.prototype,
       'method2',
     );
-
     expect(classMetadata).toBe(true);
     expect(method1Metadata).toBe(true);
     expect(method2Metadata).toBeUndefined();

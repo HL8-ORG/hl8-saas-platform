@@ -130,10 +130,10 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('docs', app, document);
 
-  await app.listen(port || 8080);
+  await app.listen(port || 9528);
 
   logger.log(
-    `🚀 Application is running on: http://localhost:${port || 8080}/api/v1`,
+    `🚀 Application is running on: http://localhost:${port || 9528}/api/v1`,
     'Bootstrap',
   );
 }

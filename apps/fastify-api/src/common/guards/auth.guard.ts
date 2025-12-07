@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   CanActivate,
   ExecutionContext,
   Injectable,
@@ -9,6 +10,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import type { FastifyRequest } from 'fastify';
 import { COOKIE_CONFIG } from '../constants/cookie.config';
+import { TENANT_CONTEXT_KEY } from '../constants/tenant.constants';
 
 /**
  * JWT 认证守卫
@@ -117,13 +119,30 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
-      const payload: unknown = await this.jwtService.verifyAsync(token, {
+      const payload: any = await this.jwtService.verifyAsync(token, {
         secret: this.config.get<string>('JWT_ACCESS_SECRET'),
       });
 
       request.user = payload;
+
+      // 如果 JWT payload 中包含 tenantId，将其设置到请求上下文中
+      // 这样 TenantMiddleware 就可以使用它（如果 TenantMiddleware 在 AuthGuard 之后执行）
+      // 或者如果 TenantMiddleware 在 AuthGuard 之前执行，这里可以验证一致性
+      if (payload.tenantId) {
+        const existingTenantId = (request as any)[TENANT_CONTEXT_KEY];
+        if (existingTenantId && existingTenantId !== payload.tenantId) {
+          throw new BadRequestException(
+            'JWT token 中的租户 ID 与请求头中的租户 ID 不一致',
+          );
+        }
+        (request as any)[TENANT_CONTEXT_KEY] = payload.tenantId;
+      }
+
       return true;
-    } catch {
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       throw new UnauthorizedException('Invalid or expired Access Token');
     }
   }

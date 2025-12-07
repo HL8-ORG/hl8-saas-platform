@@ -39,7 +39,7 @@ export class DatabaseConfig implements TypeOrmOptionsFactory {
 
     return {
       // TypeORM 需要动态数据库类型，使用类型断言
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
       type: dbType as any,
       url: databaseUrl,
       entities: [User, RefreshToken],

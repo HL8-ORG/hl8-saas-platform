@@ -300,7 +300,6 @@ describe('Roles', () => {
       TestController.prototype,
       'method2',
     );
-
     expect(classMetadata).toEqual(['ADMIN']);
     expect(method1Metadata).toEqual(['MODERATOR']);
     expect(method2Metadata).toBeUndefined();

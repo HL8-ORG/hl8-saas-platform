@@ -35,7 +35,6 @@ import { UsersModule } from '../../../src/modules/users/users.module';
         const nodeEnv = configService.get<string>('NODE_ENV');
 
         return {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           type: dbType as any,
           url: databaseUrl,
           entities: [User, RefreshToken],
