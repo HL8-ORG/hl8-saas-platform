@@ -12,10 +12,13 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { COOKIE_CONFIG } from 'src/common/constants/cookie.config';
 import { GetUser } from 'src/common/decorators/get-user.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
+import { PublicTenant } from 'src/common/decorators/tenant.decorator';
 import { RefreshTokenGuard } from 'src/common/guards/refresh-token.guard';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dtos/login.dto';
+import { ResendVerificationDto } from './dtos/resend-verification.dto';
 import { SignupDto } from './dtos/signup.dto';
+import { VerifyEmailDto } from './dtos/verify-email.dto';
 
 /**
  * Cookie 序列化选项类型
@@ -97,9 +100,10 @@ export class AuthController {
    */
   @Throttle({ strict: { ttl: 60000, limit: 3 } })
   @Public()
+  @PublicTenant()
   @Post('/signup')
-  async signup(@Body() signupDto: SignupDto) {
-    return this.authService.signup(signupDto);
+  async signup(@Body() signupDto: SignupDto, @Req() req: FastifyRequest) {
+    return this.authService.signup(signupDto, req);
   }
 
   /**
@@ -268,5 +272,43 @@ export class AuthController {
   @Get('/me')
   async getMe(@GetUser('sub') userId: string) {
     return this.authService.getMe(userId);
+  }
+
+  /**
+   * 验证邮箱
+   *
+   * 使用验证码验证用户邮箱，验证成功后更新用户状态。
+   *
+   * **限流策略**：
+   * - 使用 strict 限流：每分钟最多 5 次请求
+   *
+   * @param {VerifyEmailDto} verifyEmailDto - 邮箱验证 DTO（包含邮箱和验证码）
+   * @returns {Promise<Object>} 验证成功消息和用户信息
+   */
+  @Throttle({ strict: { ttl: 60000, limit: 5 } })
+  @Public()
+  @Post('/verify-email')
+  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    return this.authService.verifyEmail(verifyEmailDto);
+  }
+
+  /**
+   * 重新发送验证邮件
+   *
+   * 为未验证的用户重新生成验证码并发送验证邮件。
+   *
+   * **限流策略**：
+   * - 使用 strict 限流：每分钟最多 3 次请求
+   *
+   * @param {ResendVerificationDto} resendVerificationDto - 重新发送验证邮件 DTO（包含邮箱）
+   * @returns {Promise<Object>} 发送成功消息
+   */
+  @Throttle({ strict: { ttl: 60000, limit: 3 } })
+  @Public()
+  @Post('/resend-verification')
+  async resendVerification(
+    @Body() resendVerificationDto: ResendVerificationDto,
+  ) {
+    return this.authService.resendVerificationEmail(resendVerificationDto);
   }
 }

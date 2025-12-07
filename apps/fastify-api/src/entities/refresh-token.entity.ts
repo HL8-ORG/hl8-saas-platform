@@ -92,6 +92,18 @@ export class RefreshToken {
   ipAddress: string | null;
 
   /**
+   * 租户 ID
+   *
+   * 用于多租户数据隔离，提升查询性能。
+   * RefreshToken 通过 User 关联租户，但为了查询性能也添加 tenantId 字段。
+   *
+   * @type {string}
+   */
+  @Column({ name: 'tenant_id', type: 'uuid', nullable: true })
+  @Index()
+  tenantId: string;
+
+  /**
    * 过期时间
    *
    * 刷新令牌的过期时间戳。

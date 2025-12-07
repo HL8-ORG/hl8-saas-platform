@@ -5,5 +5,8 @@
  *
  * @module entities
  */
+export * from './permission.entity';
 export * from './refresh-token.entity';
+export * from './role.entity';
+export * from './tenant.entity';
 export * from './user.entity';

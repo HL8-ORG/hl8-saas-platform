@@ -1,0 +1,14 @@
+p, superuser, user, read:any
+p, manager, user_roles, read:any
+p, guest, user, read:own
+p, root, user, read:any
+,,,
+g, alice, superuser,
+g, bob, guest,
+g, tom, manager,
+,,,
+g2, users_list, user,
+g2, user_roles, user,
+g2, user_permissions, user,
+g2, roles_list, role,
+g2, role_permissions, role,

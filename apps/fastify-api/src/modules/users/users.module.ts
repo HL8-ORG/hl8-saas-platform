@@ -21,5 +21,6 @@ import { UsersService } from './users.service';
   imports: [TypeOrmModule.forFeature([User, RefreshToken])],
   controllers: [UsersController],
   providers: [UsersService],
+  exports: [UsersService], // 导出服务供其他模块使用
 })
 export class UsersModule {}

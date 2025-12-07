@@ -1,6 +1,8 @@
+import { REQUEST } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { TENANT_CONTEXT_KEY } from '../../common/constants/tenant.constants';
 import { RefreshToken } from '../../entities/refresh-token.entity';
 import { User } from '../../entities/user.entity';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
@@ -19,12 +21,15 @@ describe('UsersService', () => {
   let userRepository: jest.Mocked<Repository<User>>;
   let refreshTokenRepository: jest.Mocked<Repository<RefreshToken>>;
 
+  const mockTenantId = '550e8400-e29b-41d4-a716-446655440001';
+
   const mockUser: User = {
-    id: 'user-1',
+    id: '550e8400-e29b-41d4-a716-446655440000', // 有效的 UUID 格式
     email: 'test@example.com',
     passwordHash: 'hashed-password',
     fullName: 'Test User',
     role: 'USER',
+    tenantId: mockTenantId,
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -41,6 +46,10 @@ describe('UsersService', () => {
       delete: jest.fn(),
     };
 
+    const mockRequest = {
+      [TENANT_CONTEXT_KEY]: mockTenantId,
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
@@ -52,10 +61,14 @@ describe('UsersService', () => {
           provide: getRepositoryToken(RefreshToken),
           useValue: mockRefreshTokenRepository,
         },
+        {
+          provide: REQUEST,
+          useValue: mockRequest,
+        },
       ],
     }).compile();
 
-    service = module.get<UsersService>(UsersService);
+    service = await module.resolve<UsersService>(UsersService);
     userRepository = module.get(getRepositoryToken(User));
     refreshTokenRepository = module.get(getRepositoryToken(RefreshToken));
   });
@@ -69,7 +82,7 @@ describe('UsersService', () => {
   });
 
   describe('getProfile', () => {
-    const userId = 'user-1';
+    const userId = '550e8400-e29b-41d4-a716-446655440000'; // 有效的 UUID 格式
 
     it('应该返回用户资料', async () => {
       userRepository.findOne.mockResolvedValue(mockUser);
@@ -77,7 +90,7 @@ describe('UsersService', () => {
       const result = await service.getProfile(userId);
 
       expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { id: userId },
+        where: { id: userId, tenantId: mockTenantId },
       });
       expect(result).toHaveProperty('id', mockUser.id);
       expect(result).toHaveProperty('email', mockUser.email);
@@ -95,7 +108,7 @@ describe('UsersService', () => {
   });
 
   describe('updateProfile', () => {
-    const userId = 'user-1';
+    const userId = '550e8400-e29b-41d4-a716-446655440000'; // 有效的 UUID 格式
     const updateProfileDto: UpdateProfileDto = {
       fullName: 'Updated Name',
     };
@@ -108,11 +121,11 @@ describe('UsersService', () => {
       const result = await service.updateProfile(userId, updateProfileDto);
 
       expect(userRepository.update).toHaveBeenCalledWith(
-        userId,
+        { id: userId, tenantId: mockTenantId },
         updateProfileDto,
       );
       expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { id: userId },
+        where: { id: userId, tenantId: mockTenantId },
       });
       expect(result).toHaveProperty('fullName', 'Updated Name');
       expect(result).not.toHaveProperty('passwordHash');
@@ -127,7 +140,7 @@ describe('UsersService', () => {
       const result = await service.getAllUsers(1, 10);
 
       expect(userRepository.findAndCount).toHaveBeenCalledWith({
-        where: { isActive: true },
+        where: { isActive: true, tenantId: mockTenantId },
         skip: 0,
         take: 10,
         order: { createdAt: 'DESC' },
@@ -144,13 +157,16 @@ describe('UsersService', () => {
     });
 
     it('应该正确处理分页参数', async () => {
-      const users = [mockUser, { ...mockUser, id: 'user-2' }];
+      const users = [
+        mockUser,
+        { ...mockUser, id: '660e8400-e29b-41d4-a716-446655440000' },
+      ];
       userRepository.findAndCount.mockResolvedValue([users, 2]);
 
       const result = await service.getAllUsers(2, 1);
 
       expect(userRepository.findAndCount).toHaveBeenCalledWith({
-        where: { isActive: true },
+        where: { isActive: true, tenantId: mockTenantId },
         skip: 1,
         take: 1,
         order: { createdAt: 'DESC' },
@@ -169,7 +185,7 @@ describe('UsersService', () => {
       const result = await service.getAllUsers();
 
       expect(userRepository.findAndCount).toHaveBeenCalledWith({
-        where: { isActive: true },
+        where: { isActive: true, tenantId: mockTenantId },
         skip: 0,
         take: 10,
         order: { createdAt: 'DESC' },
@@ -180,17 +196,18 @@ describe('UsersService', () => {
   });
 
   describe('getUserById', () => {
-    const userId = 'user-1';
+    const userId = '550e8400-e29b-41d4-a716-446655440000'; // 有效的 UUID 格式
 
     it('应该返回用户信息', async () => {
-      userRepository.findOne.mockResolvedValue(mockUser);
+      const mockUserWithValidId = { ...mockUser, id: userId };
+      userRepository.findOne.mockResolvedValue(mockUserWithValidId);
 
       const result = await service.getUserById(userId);
 
       expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { id: userId },
+        where: { id: userId, tenantId: mockTenantId },
       });
-      expect(result).toHaveProperty('id', mockUser.id);
+      expect(result).toHaveProperty('id', userId);
       expect(result).not.toHaveProperty('passwordHash');
     });
 
@@ -199,6 +216,9 @@ describe('UsersService', () => {
 
       const result = await service.getUserById(userId);
 
+      expect(userRepository.findOne).toHaveBeenCalledWith({
+        where: { id: userId, tenantId: mockTenantId },
+      });
       expect(result).toBeNull();
     });
 
@@ -208,10 +228,19 @@ describe('UsersService', () => {
       expect(userRepository.findOne).not.toHaveBeenCalled();
       expect(result).toBeNull();
     });
+
+    it('当 userId 格式无效时应该返回 null', async () => {
+      const invalidUserId = 'user-1';
+
+      const result = await service.getUserById(invalidUserId);
+
+      expect(userRepository.findOne).not.toHaveBeenCalled();
+      expect(result).toBeNull();
+    });
   });
 
   describe('updateUserById', () => {
-    const userId = 'user-1';
+    const userId = '550e8400-e29b-41d4-a716-446655440000'; // 有效的 UUID 格式
     const updateUserDto: UpdateUserDto = {
       fullName: 'Updated Name',
       role: 'ADMIN',
@@ -224,9 +253,12 @@ describe('UsersService', () => {
 
       const result = await service.updateUserById(userId, updateUserDto);
 
-      expect(userRepository.update).toHaveBeenCalledWith(userId, updateUserDto);
+      expect(userRepository.update).toHaveBeenCalledWith(
+        { id: userId, tenantId: mockTenantId },
+        updateUserDto,
+      );
       expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { id: userId },
+        where: { id: userId, tenantId: mockTenantId },
       });
       expect(result).toHaveProperty('fullName', 'Updated Name');
       expect(result).toHaveProperty('role', 'ADMIN');
@@ -235,7 +267,7 @@ describe('UsersService', () => {
   });
 
   describe('deleteUserById', () => {
-    const userId = 'user-1';
+    const userId = '550e8400-e29b-41d4-a716-446655440000'; // 有效的 UUID 格式
 
     it('应该成功删除用户（软删除）', async () => {
       userRepository.update.mockResolvedValue(undefined as any);
@@ -243,10 +275,14 @@ describe('UsersService', () => {
 
       const result = await service.deleteUserById(userId);
 
-      expect(userRepository.update).toHaveBeenCalledWith(userId, {
-        isActive: false,
+      expect(userRepository.update).toHaveBeenCalledWith(
+        { id: userId, tenantId: mockTenantId },
+        { isActive: false },
+      );
+      expect(refreshTokenRepository.delete).toHaveBeenCalledWith({
+        userId,
+        tenantId: mockTenantId,
       });
-      expect(refreshTokenRepository.delete).toHaveBeenCalledWith({ userId });
       expect(result).toHaveProperty('message', 'User deleted successfully');
     });
   });

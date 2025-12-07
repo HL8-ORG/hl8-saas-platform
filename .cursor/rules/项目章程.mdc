@@ -30,7 +30,7 @@ alwaysApply: true
   - **NestJS 应用（apps/*-api）**：`package.json` 中**禁止**声明 `type: "module"`，运行时必须使用 CommonJS。TypeScript 配置使用 `NodeNext` 仅用于类型检查，实际编译输出由 SWC 处理为 CommonJS。
   - **前端应用（apps/web）**：前端应用配置不执行后端项目的规范，根据选用的框架另行规定。
 - 服务端基础框架固定为 NestJS + Fastify，无需兼容 Express。
-- 数据访问层统一使用 MikroORM 管理实体生命周期与迁移。
+
 - 关系型数据库选型锁定 PostgreSQL，文档型数据库选型锁定 MongoDB。
 
 **理由**：统一技术栈、框架与依赖选择可提升跨团队协作效率，降低学习成本，并确保在性能、扩展性与安全性上的基线能力一致。区分库与应用的模块系统规范，既保证了库的现代化（ESM），又兼容了 NestJS 的运行时要求（CommonJS）。

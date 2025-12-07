@@ -1,5 +1,10 @@
 ### Backend
 
+## 文档
+
+- [多租户系统开发指南](./docs/MULTI_TENANCY_DEVELOPMENT_GUIDE.md) - 完整的多租户开发文档
+- [多租户技术方案](./docs/MULTI_TENANCY_TECHNICAL_PLAN.md) - 技术架构设计文档
+
 ## 环境变量配置
 
 应用启动需要以下环境变量，请在项目根目录创建 `.env` 文件：
@@ -46,6 +51,10 @@ AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 AWS_S3_BUCKET_NAME=
 AWS_S3_ENDPOINT=
+
+# 多租户配置
+DEFAULT_TENANT_DOMAIN=default
+DEFAULT_USER_ROLE=USER
 ```
 
 ### 环境变量说明
@@ -72,6 +81,8 @@ AWS_S3_ENDPOINT=
 - `FILE_SYSTEM`: 文件存储系统（'s3' 或 'public'）
 - `FILE_MAX_SIZE`: 最大文件大小（字节，默认 20MB）
 - `AWS_*`: AWS S3 相关配置（仅在 FILE_SYSTEM=s3 时需要）
+- `DEFAULT_TENANT_DOMAIN`: 默认租户域名（默认：'default'），应用启动时会自动创建该租户（如果不存在）
+- `DEFAULT_USER_ROLE`: 默认用户角色（'USER'/'ADMIN'/'ROOT'，默认：'USER'），新注册用户的默认角色
 
 ## 数据库迁移
 

@@ -1,4 +1,5 @@
 import { Logger } from '@hl8/logger';
+import { MailService } from '@hl8/mail';
 import {
   ConflictException,
   ForbiddenException,
@@ -6,11 +7,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { REQUEST } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
+import { TENANT_CONTEXT_KEY } from '../../common/constants/tenant.constants';
 import { RefreshToken } from '../../entities/refresh-token.entity';
 import { User } from '../../entities/user.entity';
 import { AuthService } from './auth.service';
@@ -37,7 +40,10 @@ describe('AuthService', () => {
   let refreshTokenRepository: jest.Mocked<Repository<RefreshToken>>;
   let jwtService: jest.Mocked<JwtService>;
   let configService: jest.Mocked<ConfigService>;
+  let mailService: jest.Mocked<MailService>;
   let logger: jest.Mocked<Logger>;
+
+  const mockTenantId = '550e8400-e29b-41d4-a716-446655440000';
 
   const mockUser: User = {
     id: 'user-1',
@@ -45,6 +51,7 @@ describe('AuthService', () => {
     passwordHash: 'hashed-password',
     fullName: 'Test User',
     role: 'USER',
+    tenantId: mockTenantId,
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -54,6 +61,7 @@ describe('AuthService', () => {
     id: 'token-1',
     token: 'hashed-refresh-token',
     userId: 'user-1',
+    tenantId: mockTenantId,
     deviceInfo: 'Test Device',
     ipAddress: '127.0.0.1',
     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
@@ -94,6 +102,14 @@ describe('AuthService', () => {
       debug: jest.fn(),
     };
 
+    const mockMailService = {
+      sendEmail: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const mockRequest = {
+      [TENANT_CONTEXT_KEY]: mockTenantId,
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -114,14 +130,23 @@ describe('AuthService', () => {
           useValue: mockConfigService,
         },
         {
+          provide: MailService,
+          useValue: mockMailService,
+        },
+        {
           provide: Logger,
           useValue: mockLogger,
+        },
+        {
+          provide: REQUEST,
+          useValue: mockRequest,
         },
       ],
     }).compile();
 
-    service = module.get<AuthService>(AuthService);
+    service = await module.resolve<AuthService>(AuthService);
     userRepository = module.get(getRepositoryToken(User));
+    mailService = module.get(MailService);
     refreshTokenRepository = module.get(getRepositoryToken(RefreshToken));
     jwtService = module.get(JwtService);
     configService = module.get(ConfigService);
@@ -167,7 +192,7 @@ describe('AuthService', () => {
       const result = await service.signup(signupDto);
 
       expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { email: signupDto.email },
+        where: { email: signupDto.email, tenantId: mockTenantId },
       });
       expect(userRepository.create).toHaveBeenCalled();
       expect(userRepository.save).toHaveBeenCalled();
@@ -216,7 +241,7 @@ describe('AuthService', () => {
       const result = await service.login(loginDto, 'Device', '127.0.0.1');
 
       expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { email: loginDto.email },
+        where: { email: loginDto.email, tenantId: mockTenantId },
       });
       expect(bcrypt.compare).toHaveBeenCalledWith(
         loginDto.password,
@@ -272,19 +297,19 @@ describe('AuthService', () => {
         .mockResolvedValueOnce('new-refresh-token');
       (bcrypt.genSalt as jest.Mock).mockResolvedValue('salt');
       (bcrypt.hash as jest.Mock).mockResolvedValue('new-hashed-refresh-token');
-      refreshTokenRepository.update.mockResolvedValue(undefined as any);
 
-      const result = await service.refreshToken(
-        userId,
-        refreshToken,
-        'Device',
-        '127.0.0.1',
-      );
+      const result = await service.refreshToken(userId, refreshToken);
 
       expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { id: userId },
+        where: { id: userId, tenantId: mockTenantId },
       });
-      expect(refreshTokenRepository.find).toHaveBeenCalled();
+      expect(refreshTokenRepository.find).toHaveBeenCalledWith({
+        where: {
+          userId: mockUser.id,
+          tenantId: mockUser.tenantId,
+          expiresAt: expect.any(Object),
+        },
+      });
       expect(bcrypt.compare).toHaveBeenCalled();
       expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
       expect(refreshTokenRepository.update).toHaveBeenCalled();
@@ -332,7 +357,7 @@ describe('AuthService', () => {
       const result = await service.logout(userId, refreshToken);
 
       expect(refreshTokenRepository.find).toHaveBeenCalledWith({
-        where: { userId },
+        where: { userId, tenantId: mockTenantId },
       });
       expect(bcrypt.compare).toHaveBeenCalled();
       expect(refreshTokenRepository.delete).toHaveBeenCalledWith(
@@ -346,7 +371,10 @@ describe('AuthService', () => {
 
       const result = await service.logout(userId);
 
-      expect(refreshTokenRepository.delete).toHaveBeenCalledWith({ userId });
+      expect(refreshTokenRepository.delete).toHaveBeenCalledWith({
+        userId,
+        tenantId: mockTenantId,
+      });
       expect(result).toHaveProperty('message', 'Logged out successfully');
     });
   });
@@ -360,7 +388,7 @@ describe('AuthService', () => {
       const result = await service.getMe(userId);
 
       expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { id: userId },
+        where: { id: userId, tenantId: mockTenantId },
       });
       expect(result).toHaveProperty('id', mockUser.id);
       expect(result).toHaveProperty('email', mockUser.email);
@@ -397,6 +425,16 @@ describe('AuthService', () => {
       const result = await service.generateTokens(mockUser);
 
       expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
+      // 验证 payload 包含 tenantId
+      expect(jwtService.signAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sub: mockUser.id,
+          role: mockUser.role,
+          email: mockUser.email,
+          tenantId: mockUser.tenantId,
+        }),
+        expect.any(Object),
+      );
       expect(result).toHaveProperty('accessToken', 'access-token');
       expect(result).toHaveProperty('refreshToken', 'refresh-token');
     });

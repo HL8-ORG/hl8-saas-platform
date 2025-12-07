@@ -2,11 +2,15 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { RefreshToken } from './refresh-token.entity';
+import { Tenant } from './tenant.entity';
 
 /**
  * 用户角色枚举
@@ -109,6 +113,70 @@ export class User {
    */
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
+
+  /**
+   * 邮箱是否已验证
+   *
+   * 标识用户的邮箱是否已完成验证流程。
+   * 未验证的用户可能无法访问某些受保护的功能。
+   *
+   * @type {boolean}
+   */
+  @Column({ name: 'is_email_verified', default: false })
+  isEmailVerified: boolean;
+
+  /**
+   * 邮箱验证码
+   *
+   * 用于验证邮箱的 6 位数字验证码。
+   * 验证成功后此字段将被清除。
+   *
+   * @type {string | null}
+   */
+  @Column({
+    name: 'email_verification_code',
+    type: 'varchar',
+    length: 6,
+    nullable: true,
+  })
+  emailVerificationCode: string | null;
+
+  /**
+   * 邮箱验证码过期时间
+   *
+   * 验证码的有效期限，超过此时间后验证码失效。
+   * 验证成功后此字段将被清除。
+   *
+   * @type {Date | null}
+   */
+  @Column({
+    name: 'email_verification_expires_at',
+    type: 'timestamp',
+    nullable: true,
+  })
+  emailVerificationExpiresAt: Date | null;
+
+  /**
+   * 租户 ID
+   *
+   * 用于多租户数据隔离，所有查询和操作都会自动限制在当前租户范围内。
+   *
+   * @type {string}
+   */
+  @Column({ name: 'tenant_id', type: 'uuid', nullable: true })
+  @Index()
+  tenantId: string;
+
+  /**
+   * 关联的租户
+   *
+   * 用户所属的租户实体。
+   *
+   * @type {Tenant}
+   */
+  @ManyToOne(() => Tenant)
+  @JoinColumn({ name: 'tenant_id' })
+  tenant: Tenant;
 
   /**
    * 刷新令牌列表

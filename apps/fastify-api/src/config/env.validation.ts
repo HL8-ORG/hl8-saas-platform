@@ -24,7 +24,7 @@ export const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
-  PORT: z.coerce.number().default(8080),
+  PORT: z.coerce.number().default(9528),
 
   // Database
   DATABASE_URL: z.string().min(1, 'Invalid DATABASE_URL'),
@@ -62,6 +62,22 @@ export const envSchema = z.object({
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),
+
+  // Mail
+  MAIL_HOST: z.string().min(1, 'MAIL_HOST is required'),
+  MAIL_PORT: z.coerce.number().default(587),
+  MAIL_USERNAME: z.string().min(1, 'MAIL_USERNAME is required'),
+  MAIL_PASSWORD: z.string().min(1, 'MAIL_PASSWORD is required'),
+  MAIL_SECURE: z
+    .union([z.boolean(), z.literal('true'), z.literal('false')])
+    .transform((val) => val === true || val === 'true')
+    .default(false),
+  APP_NAME: z.string().optional(),
+  APP_URL: z.string().url().optional(),
+
+  // Multi-tenancy
+  DEFAULT_TENANT_DOMAIN: z.string().default('default'),
+  DEFAULT_USER_ROLE: z.enum(['USER', 'ADMIN', 'ROOT']).default('USER'),
 });
 
 /**
