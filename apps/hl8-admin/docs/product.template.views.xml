@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<avalon>
+    <record id="product_template_view_form" service="base.action.view">
+        <field name="name">product_template_view_form</field>
+        <field name="label">产品模板</field>
+        <field name="viewMode">form</field>
+        <field name="ref_serviceId">product.template</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <row>
+                        <col>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="tagIds"/>
+                            <field name="type"/>
+                            <field name="categoryId"/>
+                        </col>
+                        <col>
+                            <field name="image"/>
+
+                            <field name="canSale"/>
+                            <field name="canPurchase"/>
+                            <field name="active"/>
+                        </col>
+                    </row>
+                    <notebook>
+                        <page label="属性行">
+                            <field name="attributeLineIds" />
+                        </page>
+                        <page label="变体">
+                            <field name="productVariantIds" />
+                        </page>
+                        <page label="描述">
+                            <field name="description"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="product_template_view_tree" service="base.action.view">
+        <field name="name">product_template_view_tree</field>
+        <field name="label">产品模板</field>
+        <field name="viewMode">tree</field>
+        <field name="ref_serviceId">product.template</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="type"/>
+                <field name="categoryId"/>
+                <field name="tagIds"/>
+                <field name="active"/>
+                <field name="image"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="product_template_view_kanban" service="base.action.view">
+        <field name="name">product_template_view_kanban</field>
+        <field name="label">产品模板</field>
+        <field name="viewMode">kanban</field>
+        <field name="ref_serviceId">product.template</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <template>
+                    <my-card>
+                        <div class="flex">
+                            <div class="w-28 mr-4">
+                                <field name="image"/>
+                            </div>
+                            <div class="flex-1">
+                                <field name="name"/>
+                                <field name="code"/>
+                                <field name="type"/>
+                                <field name="categoryId"/>
+                                <field name="tagIds"/>
+                                <field name="active"/>
+                            </div>
+                        </div>
+                    </my-card>
+                </template>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="product_template_view_search" service="base.action.view">
+        <field name="name">product_template_view_search</field>
+        <field name="label">产品模板查询</field>
+        <field name="viewMode">search</field>
+        <field name="ref_serviceId">product.template</field>
+        <field name="arch" type="xml">
+            <search>
+                <filter>
+                    <field name="name" opreator="like"/>
+                    <field name="code" opreator="like"/>
+                    <field name="categoryId" opreator="in"/>
+                    <field name="tagIds" opreator="in"/>
+                    <field name="type" opreator="in"/>
+                    <field name="active" opreator="in"/>
+                </filter>
+                <group>
+                    <sections field="categoryId" label="按类别分组">
+                        <section field="id" aggregate="count"/>
+                    </sections>
+                </group>
+                <order>
+                    <field name="categoryId" sequence="1" order="asc"/>
+                    <field name="name" sequence="2" order="asc"/>
+                </order>
+            </search>
+        </field>
+    </record>
+
+    <record id="product_template_action" service="base.action.window">
+        <field name="name">product.template</field>
+        <field name="label">产品模板</field>
+        <field name="viewMode">kanban,tree</field>
+        <field name="ref_serviceId">product.template</field>
+    </record>
+</avalon>
