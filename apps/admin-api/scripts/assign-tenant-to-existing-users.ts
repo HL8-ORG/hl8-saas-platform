@@ -1,8 +1,8 @@
 import { config } from 'dotenv';
 import { AppDataSource } from '../src/database/data-source';
-import { RefreshToken } from '../src/entities/refresh-token.entity';
-import { Tenant } from '../src/entities/tenant.entity';
-import { User } from '../src/entities/user.entity';
+import { RefreshToken } from '../src/infrastructure/persistence/typeorm/entities/refresh-token.entity';
+import { Tenant } from '../src/infrastructure/persistence/typeorm/entities/tenant.entity';
+import { User } from '../src/infrastructure/persistence/typeorm/entities/user.entity';
 
 config();
 
