@@ -1,5 +1,6 @@
 import fastifyCookie from '@fastify/cookie';
 import { Logger } from '@hl8/logger';
+import { RedisUtility } from '@hl8/redis';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
@@ -39,6 +40,17 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
  * @returns {Promise<void>}
  */
 async function bootstrap() {
+  // 初始化 Redis 连接（在创建应用之前）
+  try {
+    await RedisUtility.client();
+    console.log('✅ Redis 连接已初始化');
+  } catch (error) {
+    console.error('❌ Redis 初始化失败:', error);
+    // 根据业务需求决定是否继续启动
+    // 如果 Redis 是必需的，可以取消注释下一行来阻止启动
+    // throw error;
+  }
+
   // Create Fastify adapter and register cookie plugin before creating the app
   const adapter = new FastifyAdapter();
 
@@ -52,7 +64,8 @@ async function bootstrap() {
   );
 
   // Use Pino logger
-  app.useLogger(app.get(Logger));
+  const logger = app.get(Logger);
+  app.useLogger(logger);
 
   app.setGlobalPrefix('api/v1');
 
@@ -103,9 +116,6 @@ async function bootstrap() {
     }),
   );
 
-  // Get logger instance
-  const logger = app.get(Logger);
-
   // Global response interceptor for standard API responses
   app.useGlobalInterceptors(new ResponseInterceptor());
 
@@ -137,4 +147,33 @@ async function bootstrap() {
     'Bootstrap',
   );
 }
+
+/**
+ * 应用关闭处理
+ *
+ * 清理 Redis 连接等资源。
+ *
+ * @function shutdown
+ * @returns {Promise<void>}
+ */
+async function shutdown() {
+  try {
+    await RedisUtility.close();
+    console.log('✅ Redis 连接已关闭');
+  } catch (error) {
+    console.error('❌ 关闭 Redis 连接失败:', error);
+  }
+}
+
+// 在应用关闭时清理 Redis 连接
+process.on('SIGTERM', async () => {
+  await shutdown();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  await shutdown();
+  process.exit(0);
+});
+
 void bootstrap();

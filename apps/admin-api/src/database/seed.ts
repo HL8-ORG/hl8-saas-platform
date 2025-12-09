@@ -1,8 +1,11 @@
 import * as bcrypt from 'bcrypt';
 import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
-import { RefreshToken } from '../entities/refresh-token.entity';
-import { User, UserRole } from '../entities/user.entity';
+import { RefreshToken } from '../infrastructure/persistence/typeorm/entities/refresh-token.entity';
+import {
+  User,
+  UserRole,
+} from '../infrastructure/persistence/typeorm/entities/user.entity';
 
 dotenv.config();
 

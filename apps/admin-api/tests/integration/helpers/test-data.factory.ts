@@ -1,7 +1,10 @@
 import * as bcrypt from 'bcrypt';
 import { DataSource } from 'typeorm';
-import { RefreshToken } from '../../../src/entities/refresh-token.entity';
-import { User, UserRole } from '../../../src/entities/user.entity';
+import { RefreshToken } from '../../../src/infrastructure/persistence/typeorm/entities/refresh-token.entity';
+import {
+  User,
+  UserRole,
+} from '../../../src/infrastructure/persistence/typeorm/entities/user.entity';
 
 /**
  * 测试数据工厂

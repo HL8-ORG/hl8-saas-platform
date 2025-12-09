@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from '@nestjs/typeorm';
-import { RefreshToken } from '../entities/refresh-token.entity';
-import { User } from '../entities/user.entity';
+import { RefreshToken } from '../infrastructure/persistence/typeorm/entities/refresh-token.entity';
+import { User } from '../infrastructure/persistence/typeorm/entities/user.entity';
 
 /**
  * 数据库配置类

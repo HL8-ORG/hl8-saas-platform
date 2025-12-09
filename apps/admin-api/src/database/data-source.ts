@@ -1,10 +1,10 @@
 import { config } from 'dotenv';
 import { DataSource } from 'typeorm';
-import { Permission } from '../entities/permission.entity';
-import { RefreshToken } from '../entities/refresh-token.entity';
-import { Role } from '../entities/role.entity';
-import { Tenant } from '../entities/tenant.entity';
-import { User } from '../entities/user.entity';
+import { Permission } from '../infrastructure/persistence/typeorm/entities/permission.entity';
+import { RefreshToken } from '../infrastructure/persistence/typeorm/entities/refresh-token.entity';
+import { Role } from '../infrastructure/persistence/typeorm/entities/role.entity';
+import { Tenant } from '../infrastructure/persistence/typeorm/entities/tenant.entity';
+import { User } from '../infrastructure/persistence/typeorm/entities/user.entity';
 
 config();
 

@@ -1,11 +1,19 @@
 import { Logger, LoggerModule } from '@hl8/logger';
 import { MAIL_CONFIG, MailModule, MailService } from '@hl8/mail';
+import { RedisUtility } from '@hl8/redis';
+import { CacheModule } from '@nestjs/cache-manager';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CqrsModule } from '@nestjs/cqrs';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import * as casbin from 'casbin';
 import { DataSource } from 'typeorm';
+import { AuthModule } from './application/auth/auth.module';
+import { PermissionsModule } from './application/permissions/permissions.module';
+import { RolesModule } from './application/roles/roles.module';
+import { TenantsModule } from './application/tenants/tenants.module';
+import { UsersModule } from './application/users/users.module';
 import { AuthGuard } from './common/guards/auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
@@ -14,18 +22,15 @@ import { AppConfigModule } from './config/config.module';
 import { loggerConfig } from './config/logger.config';
 import { MailConfigService } from './config/mail.config';
 import { MailerConfigModule } from './config/mailer.config';
-import { Permission } from './entities/permission.entity';
-import { RefreshToken } from './entities/refresh-token.entity';
-import { Role } from './entities/role.entity';
-import { Tenant } from './entities/tenant.entity';
-import { User } from './entities/user.entity';
-import { AuthModule } from './modules/auth/auth.module';
-import { AUTHZ_ENFORCER, AuthZModule } from './modules/authz';
-import { HealthModule } from './modules/health/health.module';
-import { PermissionsModule } from './modules/permissions/permissions.module';
-import { RolesModule } from './modules/roles/roles.module';
-import { TenantsModule } from './modules/tenants/tenants.module';
-import { UsersModule } from './modules/users/users.module';
+import { createRedisCacheStore } from './infrastructure/cache/redis-cache.factory';
+import { DomainEventBus, IEventBus } from './infrastructure/events';
+import { Permission } from './infrastructure/persistence/typeorm/entities/permission.entity';
+import { RefreshToken } from './infrastructure/persistence/typeorm/entities/refresh-token.entity';
+import { Role } from './infrastructure/persistence/typeorm/entities/role.entity';
+import { Tenant } from './infrastructure/persistence/typeorm/entities/tenant.entity';
+import { User } from './infrastructure/persistence/typeorm/entities/user.entity';
+import { AUTHZ_ENFORCER, AuthZModule } from './lib/casbin';
+import { HealthModule } from './lib/health/health.module';
 import TypeORMAdapter from './typeorm-adapter';
 import { CasbinRule } from './typeorm-adapter/casbinRule';
 
@@ -48,6 +53,7 @@ import { CasbinRule } from './typeorm-adapter/casbinRule';
  * - LoggerModule: Pino 日志系统配置
  * - ThrottlerModule: API 限流配置
  * - AppConfigModule: 应用配置管理
+ * - CqrsModule: CQRS 和事件驱动架构支持
  * - TypeOrmModule: 数据库连接管理（通过 useFactory 配置）
  * - AuthModule: 认证功能模块
  * - UsersModule: 用户管理功能模块
@@ -72,7 +78,23 @@ import { CasbinRule } from './typeorm-adapter/casbinRule';
         limit: 5,
       },
     ]),
+    // 缓存模块：使用 Redis 缓存，全局可用
+    CacheModule.registerAsync({
+      isGlobal: true,
+      useFactory: async () => {
+        // 确保 Redis 已初始化
+        await RedisUtility.client();
+
+        return {
+          store: createRedisCacheStore(),
+          ttl: 60, // 默认缓存时间 60 秒（cache-manager v7 使用秒）
+          // 注意：max 选项在 Redis store 中无效，Redis 本身没有条目数限制
+        };
+      },
+    }),
     AppConfigModule,
+    // CQRS 模块：支持命令查询职责分离和事件驱动架构
+    CqrsModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -88,6 +110,31 @@ import { CasbinRule } from './typeorm-adapter/casbinRule';
           synchronize: nodeEnv !== 'production',
           logging: nodeEnv === 'development',
           ssl: nodeEnv === 'production' ? { rejectUnauthorized: false } : false,
+          // 性能优化：连接池配置
+          extra: {
+            // 连接池最大连接数
+            max: configService.get<number>('DB_POOL_MAX', 20),
+            // 连接池最小连接数
+            min: configService.get<number>('DB_POOL_MIN', 5),
+            // 连接空闲超时时间（毫秒）
+            idleTimeoutMillis: configService.get<number>(
+              'DB_POOL_IDLE_TIMEOUT',
+              30000,
+            ),
+            // 连接获取超时时间（毫秒）
+            connectionTimeoutMillis: configService.get<number>(
+              'DB_POOL_CONNECTION_TIMEOUT',
+              10000,
+            ),
+          },
+          // 性能优化：查询缓存（可选，根据需求启用）
+          cache:
+            nodeEnv === 'production'
+              ? {
+                  duration: 30000, // 缓存 30 秒
+                  type: 'redis', // 如果使用 Redis，否则使用 'ioredis' 或内存缓存
+                }
+              : false,
         };
       },
     }),
@@ -187,6 +234,11 @@ import { CasbinRule } from './typeorm-adapter/casbinRule';
   controllers: [],
   providers: [
     MailConfigService,
+    // 领域事件总线：提供统一的事件发布接口
+    {
+      provide: IEventBus,
+      useClass: DomainEventBus,
+    },
     {
       provide: 'APP_GUARD',
       useClass: ThrottlerGuard,

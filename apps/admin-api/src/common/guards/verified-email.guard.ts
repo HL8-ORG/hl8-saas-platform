@@ -7,7 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import type { FastifyRequest } from 'fastify';
 import { Repository } from 'typeorm';
-import { User } from '../../entities/user.entity';
+import { User } from '../../infrastructure/persistence/typeorm/entities/user.entity';
 
 /**
  * 邮箱验证守卫

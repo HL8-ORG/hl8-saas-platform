@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { FastifyRequest } from 'fastify';
 import { Repository } from 'typeorm';
-import { User } from '../../entities/user.entity';
+import { User } from '../../infrastructure/persistence/typeorm/entities/user.entity';
 import { VerifiedEmailGuard } from './verified-email.guard';
 
 /**

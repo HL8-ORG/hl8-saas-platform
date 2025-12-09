@@ -2,16 +2,16 @@ import { LoggerModule } from '@hl8/logger';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from '../../../src/application/auth/auth.module';
+import { UsersModule } from '../../../src/application/users/users.module';
 import { AuthGuard } from '../../../src/common/guards/auth.guard';
 import { RolesGuard } from '../../../src/common/guards/roles.guard';
 import { CorrelationIdMiddleware } from '../../../src/common/middleware/correlation-id.middleware';
 import { AppConfigModule } from '../../../src/config/config.module';
 import { loggerConfig } from '../../../src/config/logger.config';
-import { RefreshToken } from '../../../src/entities/refresh-token.entity';
-import { User } from '../../../src/entities/user.entity';
-import { AuthModule } from '../../../src/modules/auth/auth.module';
-import { HealthModule } from '../../../src/modules/health/health.module';
-import { UsersModule } from '../../../src/modules/users/users.module';
+import { RefreshToken } from '../../../src/infrastructure/persistence/typeorm/entities/refresh-token.entity';
+import { User } from '../../../src/infrastructure/persistence/typeorm/entities/user.entity';
+import { HealthModule } from '../../../src/lib/health/health.module';
 
 /**
  * 测试专用的应用模块
